@@ -9,7 +9,7 @@ from your JavaScript modules, leveraging the power of Bun.
 To install BOSS, execute the following command with [Bun](https://bun.sh):
 
 ```shell
-bun add @siguici/boss
+bun add boss.sh
 ```
 
 ## Configuration
@@ -18,7 +18,7 @@ Configure BOSS in your project by defining
 the files to import in [the Bun preload file](https://bun.sh/docs/runtime/bunfig#preload):
 
 ```typescript
-import { use } from "@siguici/boss";
+import { use } from "boss.sh";
 
 use(/\.php/).as('PHP');
 use(/\.(v|vv|vsh)/).with('v run').as('V');

@@ -1,5 +1,5 @@
 {
-  "name": "@siguici/boss",
+  "name": "boss.sh",
   "version": "0.0.0",
   "private": false,
   "type": "module",
@@ -12,12 +12,12 @@
   "publishConfig": {
     "access": "public"
   },
-  "homepage": "https://npmjs.com/package/@siguici/boss",
+  "homepage": "https://npmjs.com/package/boss.sh",
   "repository": {
     "type": "git",
-    "url": "https://github.com/siguici/boss"
+    "url": "https://github.com/siguici/boss.sh"
   },
-  "bugs": "https://github.com/siguici/boss/issues",
+  "bugs": "https://github.com/siguici/boss.sh/issues",
   "author": {
     "name": "Sigui Kessé Emmanuel",
     "email": "siguici@proton.me",
