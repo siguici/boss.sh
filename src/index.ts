@@ -14,7 +14,7 @@ export async function load(
   resolver: Resolver,
   cwd?: Cwd,
   env?: Env,
-): Promise<any> {
+): Promise<object> {
   resolver = typeof resolver === "function" ? resolver(path) : resolver;
   resolver = Array.isArray(resolver) ? resolver : resolver.split(" ");
 
@@ -41,12 +41,15 @@ export async function load(
     throw new Error(`Failed to run ${command}: ${stderr.toString()}`);
   }
 
-  const result = stdout.toString();
+  return parse(stdout.toString());
+}
 
+function parse(data: string): object {
   try {
-    return JSON.parse(result);
+    const result = JSON.parse(data);
+    return typeof result === "object" ? result : { default: result };
   } catch (_) {
-    return result;
+    return { default: data };
   }
 }
 
@@ -64,9 +67,7 @@ export function register(
     async setup(build) {
       build.onLoad({ filter }, async ({ path }) => {
         resolver = resolver ?? name.toLowerCase();
-        const result = await load(path, resolver, cwd, env);
-        const exports =
-          typeof result === "object" ? result : { default: result };
+        const exports = await load(path, resolver, cwd, env);
         return {
           exports,
           loader: "object",
