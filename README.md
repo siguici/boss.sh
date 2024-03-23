@@ -17,7 +17,7 @@ Configure BOSS in your project by defining the files to import in [the Bun prelo
 ```typescript
 import { register } from "boss.sh";
 
-register('PHP', /\.php$/);
+register('PHP');
 register('V', /\.(v|vv|vsh)$/, "v run");
 ```
 
