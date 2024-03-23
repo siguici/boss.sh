@@ -1,6 +1,4 @@
-import { use } from "./src/index.ts";
+import { register } from "./src/index.ts";
 
-use(/\.php$/).as("PHP");
-use(/\.(v|vv|vsh)$/)
-  .with("v run")
-  .as("V");
+register("PHP", /\.php$/);
+register("V", /\.(v|vv|vsh)$/, "v run");
