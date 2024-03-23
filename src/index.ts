@@ -7,7 +7,7 @@ export type Command = string | string[];
 export type Handler = (path: Path) => Command;
 export type Resolver = Command | Handler;
 
-export async function load(path: Path, resolver: Resolver): Promise<string> {
+export async function load(path: Path, resolver: Resolver): Promise<any> {
   resolver = typeof resolver === "function" ? resolver(path) : resolver;
   resolver = Array.isArray(resolver) ? resolver : resolver.split(" ");
   const command = which(resolver[0]);
@@ -15,8 +15,20 @@ export async function load(path: Path, resolver: Resolver): Promise<string> {
     throw new Error(`Command (${command}) not found`);
   }
   const args = resolver.slice(1).join(" ");
-  const text = await $`${command} ${args} ${path}`.text();
-  return text;
+  const { exitCode, stdout, stderr } =
+    await $`${command} ${args} ${path}`.quiet();
+
+  if (exitCode !== 0) {
+    throw new Error(`Failed to run ${command}: ${stderr.toString()}`);
+  }
+
+  const result = stdout.toString();
+
+  try {
+    return JSON.parse(result);
+  } catch (_) {
+    return result;
+  }
 }
 
 export function register(
@@ -31,11 +43,11 @@ export function register(
     async setup(build) {
       build.onLoad({ filter }, async ({ path }) => {
         resolver = resolver ?? name.toLowerCase();
-        const text = await load(path, resolver);
+        const result = await load(path, resolver);
+        const exports =
+          typeof result === "object" ? result : { default: result };
         return {
-          exports: {
-            default: text,
-          },
+          exports,
           loader: "object",
         };
       });
