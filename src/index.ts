@@ -6,15 +6,34 @@ export type Filter = RegExp | string;
 export type Command = string | string[];
 export type Handler = (path: Path) => Command;
 export type Resolver = Command | Handler;
+export type Cwd = string;
+export type Env = Record<string, string | undefined>;
 
-export async function load(path: Path, resolver: Resolver): Promise<any> {
+export async function load(
+  path: Path,
+  resolver: Resolver,
+  cwd?: Cwd,
+  env?: Env,
+): Promise<any> {
   resolver = typeof resolver === "function" ? resolver(path) : resolver;
   resolver = Array.isArray(resolver) ? resolver : resolver.split(" ");
+
   const command = which(resolver[0]);
+
   if (!command) {
     throw new Error(`Command (${command}) not found`);
   }
+
   const args = resolver.slice(1).join(" ");
+
+  if (cwd) {
+    $.cwd(cwd);
+  }
+
+  if (env) {
+    $.env(env);
+  }
+
   const { exitCode, stdout, stderr } =
     await $`${command} ${args} ${path}`.quiet();
 
@@ -35,6 +54,8 @@ export function register(
   name: Name,
   filter?: Filter,
   resolver?: Resolver,
+  cwd?: Cwd,
+  env?: Env,
 ): void {
   filter = filter ?? new RegExp(`\\.${name}$`, "i");
   filter = filter instanceof RegExp ? filter : new RegExp(filter);
@@ -43,7 +64,7 @@ export function register(
     async setup(build) {
       build.onLoad({ filter }, async ({ path }) => {
         resolver = resolver ?? name.toLowerCase();
-        const result = await load(path, resolver);
+        const result = await load(path, resolver, cwd, env);
         const exports =
           typeof result === "object" ? result : { default: result };
         return {
