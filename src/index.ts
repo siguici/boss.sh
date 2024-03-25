@@ -1,4 +1,4 @@
-import { $, plugin, which } from "bun";
+import { $, type ShellPromise, plugin, which } from "bun";
 
 export type Name = string;
 export type Path = string;
@@ -8,13 +8,14 @@ export type Handler = (path: Path) => Command;
 export type Resolver = Command | Handler;
 export type Cwd = string;
 export type Env = Record<string, string | undefined>;
+export type Result = ShellPromise & { command: string; args: string };
 
-export async function load(
+export async function run(
   path: Path,
   resolver: Resolver,
   cwd?: Cwd,
   env?: Env,
-): Promise<object> {
+): Promise<Result> {
   resolver = typeof resolver === "function" ? resolver(path) : resolver;
   resolver = Array.isArray(resolver) ? resolver : resolver.split(" ");
 
@@ -34,8 +35,23 @@ export async function load(
     $.env(env);
   }
 
-  const { exitCode, stdout, stderr } =
-    await $`${command} ${args} ${path}`.quiet();
+  const result = await $`${command} ${args} ${path}`.quiet();
+
+  return { ...result, command, args };
+}
+
+export async function load(
+  path: Path,
+  resolver: Resolver,
+  cwd?: Cwd,
+  env?: Env,
+): Promise<object> {
+  const { command, exitCode, stdout, stderr } = await run(
+    path,
+    resolver,
+    cwd,
+    env,
+  );
 
   if (exitCode !== 0) {
     throw new Error(`Failed to run ${command}: ${stderr.toString()}`);
