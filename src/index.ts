@@ -8,21 +8,21 @@ export type Handler = (path: Path) => Command;
 export type Resolver = Command | Handler;
 export type Cwd = string;
 export type Env = Record<string, string | undefined>;
-export type Result = ShellPromise & { command: string; args: string };
+export type Result = ShellPromise;
 
 export async function run(
   path: Path,
   resolver: Resolver,
   cwd?: Cwd,
   env?: Env,
-): Promise<Result> {
+): Promise<ShellPromise> {
   resolver = typeof resolver === "function" ? resolver(path) : resolver;
   resolver = Array.isArray(resolver) ? resolver : resolver.split(" ");
 
   const command = which(resolver[0]);
 
   if (!command) {
-    throw new Error(`Command (${command}) not found`);
+    throw new Error(`Command (${resolver.join(" ")}) not found`);
   }
 
   const args = resolver.slice(1).join(" ");
@@ -37,7 +37,7 @@ export async function run(
 
   const result = await $`${command} ${args} ${path}`.quiet();
 
-  return { ...result, command, args };
+  return result;
 }
 
 export async function load(
@@ -46,15 +46,10 @@ export async function load(
   cwd?: Cwd,
   env?: Env,
 ): Promise<object> {
-  const { command, exitCode, stdout, stderr } = await run(
-    path,
-    resolver,
-    cwd,
-    env,
-  );
+  const { exitCode, stdout, stderr } = await run(path, resolver, cwd, env);
 
   if (exitCode !== 0) {
-    throw new Error(`Failed to run ${command}: ${stderr.toString()}`);
+    throw new Error(`Failed to load ${path}: ${stderr.toString()}`);
   }
 
   return parse(stdout.toString());
