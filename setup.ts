@@ -1,4 +1,4 @@
-import { register } from "./src/index.ts";
+import { setup } from "./src/index.ts";
 
-register("PHP");
-register("V", /\.(v|vv|vsh)$/, "v run");
+setup("PHP");
+setup("V", /\.(v|vv|vsh)$/, "v run");

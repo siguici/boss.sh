@@ -22,10 +22,10 @@ bun add boss.sh
 Configure Boss in your project by defining the files to import in [the Bun preload file](https://bun.sh/docs/runtime/bunfig#preload):
 
 ```typescript
-import { register } from "boss.sh";
+import { setup } from "boss.sh";
 
-register('PHP');
-register('V', /\.(v|vv|vsh)$/, "v run");
+setup('PHP');
+setup('V', /\.(v|vv|vsh)$/, "v run");
 ```
 
 ## 📖 Usage

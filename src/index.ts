@@ -10,7 +10,7 @@ export type Cwd = string;
 export type Env = Record<string, string | undefined>;
 export type Result = ShellPromise;
 
-export function register(
+export function setup(
   name: Name,
   filter?: Filter,
   handler?: Handler,
