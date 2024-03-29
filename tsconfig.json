@@ -1,5 +1,5 @@
 {
-  "include": ["lib/**/*", "app/**/*"],
+  "include": ["src/**/*", "spec/**/*"],
   "exclude": ["node_modules"],
   "compilerOptions": {
     "allowJs": true,
@@ -42,7 +42,8 @@
     "types": ["bun", "node"],
     "baseUrl": ".",
     "paths": {
-      "sikessem/*": ["lib/sikessem/src/*"]
+      "boss.sh": ["src/index.ts"],
+      "boss.sh/*": ["/src/*"]
     }
   },
   "files": ["./biome.json"]
