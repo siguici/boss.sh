@@ -4,28 +4,119 @@ export type Name = string;
 export type Path = string;
 export type Filter = RegExp | string;
 export type Command = string | string[];
-export type Handler = (path: Path) => Command;
-export type Resolver = Command | Handler;
+export type Resolver = (path: Path) => Command;
+export type Handler = Command | Resolver;
 export type Cwd = string;
 export type Env = Record<string, string | undefined>;
 export type Result = ShellPromise;
 
+export function register(
+  name: Name,
+  filter?: Filter,
+  handler?: Handler,
+  cwd?: Cwd,
+  env?: Env,
+): void {
+  filter = filter ?? new RegExp(`\\.${name}$`, "i");
+  filter = filter instanceof RegExp ? filter : new RegExp(filter);
+  plugin({
+    name,
+    async setup(build) {
+      build.onLoad({ filter }, async ({ path }) => {
+        handler = handler ?? name.toLowerCase();
+        const exports = await use(path, handler, cwd, env);
+        return {
+          exports,
+          loader: "object",
+        };
+      });
+    },
+  });
+}
+
+export async function use(
+  path: Path,
+  handler: Handler,
+  cwd?: Cwd,
+  env?: Env,
+): Promise<object> {
+  const { exitCode, stdout, stderr } = await handle(path, handler, cwd, env);
+
+  if (exitCode !== 0) {
+    throw new Error(`Enable to use ${path}: ${stderr.toString()}`);
+  }
+
+  const data = stdout.toString();
+
+  try {
+    const result = JSON.parse(data);
+    return typeof result === "object" ? result : { default: result };
+  } catch (_) {
+    return { default: data };
+  }
+}
+
 export async function run(
   path: Path,
-  resolver: Resolver,
+  handler: Handler,
+  cwd?: Cwd,
+  env?: Env,
+): Promise<void> {
+  const { exitCode, stdout, stderr } = await handle(path, handler, cwd, env);
+
+  exitCode === 0
+    ? console.log(stdout.toString())
+    : console.error(stderr.toString());
+
+  process.exit(exitCode);
+}
+
+export async function serve(
+  path: Path,
+  handler: Handler,
+  cwd?: Cwd,
+  env?: Env,
+): Promise<Response> {
+  const { exitCode, stdout, stderr } = await handle(path, handler, cwd, env);
+
+  if (exitCode !== 0) {
+    throw new Error(`Enable to serve ${path}: ${stderr.toString()}`);
+  }
+
+  const responseString = stdout.toString();
+  const [headersString, bodyString] = responseString.split(/\r?\n\r?\n/, 2);
+  const headers = new Headers(
+    headersString.split(/\r?\n/).map((line: string) => {
+      const [name, ...values] = line.split(/:\s+/);
+      return [name, values.join(":")];
+    }),
+  );
+  const statusString = headers.get("Status") ?? "200 OK";
+  const [statusCode, statusText] = statusString.split(/\s+/, 2);
+
+  return new Response(bodyString ?? "", {
+    status: Number(statusCode),
+    statusText: statusText ?? "OK",
+    headers,
+  });
+}
+
+export async function handle(
+  path: Path,
+  handler: Handler,
   cwd?: Cwd,
   env?: Env,
 ): Promise<ShellPromise> {
-  resolver = typeof resolver === "function" ? resolver(path) : resolver;
-  resolver = Array.isArray(resolver) ? resolver : resolver.split(" ");
+  handler = typeof handler === "function" ? handler(path) : handler;
+  handler = Array.isArray(handler) ? handler : handler.split(" ");
 
-  const command = which(resolver[0]);
+  const command = which(handler[0]);
 
   if (!command) {
-    throw new Error(`Command (${resolver.join(" ")}) not found`);
+    throw new Error(`Command (${handler.join(" ")}) not found`);
   }
 
-  const args = resolver.slice(1).join(" ");
+  const args = handler.slice(1).join(" ");
 
   if (cwd) {
     $.cwd(cwd);
@@ -38,52 +129,4 @@ export async function run(
   const result = await $`${command} ${args} ${path}`.quiet();
 
   return result;
-}
-
-export async function load(
-  path: Path,
-  resolver: Resolver,
-  cwd?: Cwd,
-  env?: Env,
-): Promise<object> {
-  const { exitCode, stdout, stderr } = await run(path, resolver, cwd, env);
-
-  if (exitCode !== 0) {
-    throw new Error(`Failed to load ${path}: ${stderr.toString()}`);
-  }
-
-  return parse(stdout.toString());
-}
-
-function parse(data: string): object {
-  try {
-    const result = JSON.parse(data);
-    return typeof result === "object" ? result : { default: result };
-  } catch (_) {
-    return { default: data };
-  }
-}
-
-export function register(
-  name: Name,
-  filter?: Filter,
-  resolver?: Resolver,
-  cwd?: Cwd,
-  env?: Env,
-): void {
-  filter = filter ?? new RegExp(`\\.${name}$`, "i");
-  filter = filter instanceof RegExp ? filter : new RegExp(filter);
-  plugin({
-    name,
-    async setup(build) {
-      build.onLoad({ filter }, async ({ path }) => {
-        resolver = resolver ?? name.toLowerCase();
-        const exports = await load(path, resolver, cwd, env);
-        return {
-          exports,
-          loader: "object",
-        };
-      });
-    },
-  });
 }
