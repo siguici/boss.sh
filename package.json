@@ -29,7 +29,7 @@
     "code import",
     "package"
   ],
-  "version": "0.0.5",
+  "version": "0.0.6",
   "private": false,
   "type": "module",
   "engines": {
