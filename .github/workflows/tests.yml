@@ -43,6 +43,9 @@ jobs:
         with:
           php-version: ${{ matrix.php }}
 
+      - name: Start server
+        run: bun server.ts > /dev/null 2>&1 &
+
       - name: ✅ Check code style
         run: bun check
 

@@ -15,13 +15,7 @@ it("can run V file", () => {
   expect(run(`${import.meta.dir}/hello.vsh`, "v run")).toBeEmpty();
 });
 
-it("can serve PHP file", () => {
-  const server = Bun.serve({
-    async fetch(request: Request, server) {
-      const response = await serve(`${import.meta.dir}/hello.php`, "php");
-      expect(response).toBeInstanceOf(Response);
-    },
-  });
-
-  console.log(`Server running at http://localhost:${server.port}`);
+it("can serve PHP file", async () => {
+  const response = await fetch("http://localhost:3000");
+  expect(await response.text()).toEqual("<p>Hello PHP!</p>");
 });
