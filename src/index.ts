@@ -107,16 +107,20 @@ export async function handle(
   cwd?: Cwd,
   env?: Env,
 ): Promise<ShellPromise> {
-  handler = typeof handler === "function" ? handler(path) : handler;
-  handler = Array.isArray(handler) ? handler : handler.split(" ");
+  handler =
+    typeof handler === "function"
+      ? handler(path)
+      : [...parseCommand(handler), path];
 
-  const command = which(handler[0]);
+  let args = parseCommand(handler);
+  const command = which(args[0]);
+  const action = args[1];
 
   if (!command) {
-    throw new Error(`Command (${handler.join(" ")}) not found`);
+    throw new Error(`Command ${args[0]} not found`);
   }
 
-  const args = handler.slice(1).join(" ");
+  args = args.slice(2);
 
   if (cwd) {
     $.cwd(cwd);
@@ -126,7 +130,11 @@ export async function handle(
     $.env(env);
   }
 
-  const result = await $`${command} ${args} ${path}`.quiet();
+  const result = await $`${command} ${action} ${args.join(" ")}`.quiet();
 
   return result;
+}
+
+function parseCommand(command: string | string[]): string[] {
+  return typeof command === "string" ? command.split(/\s+/) : command;
 }
