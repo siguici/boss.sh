@@ -114,13 +114,24 @@ export async function handle(
 
   let args = parseCommand(handler);
   const command = which(args[0]);
-  const action = args[1];
 
   if (!command) {
     throw new Error(`Command ${args[0]} not found`);
   }
 
-  args = args.slice(2);
+  args = args.slice(1);
+  let action = "";
+  const options = [];
+
+  for (const arg of args) {
+    args = args.slice(1);
+    if (arg.startsWith("-") || arg.startsWith("\\")) {
+      options.push(arg);
+    } else {
+      action = arg;
+      break;
+    }
+  }
 
   if (cwd) {
     $.cwd(cwd);
@@ -130,7 +141,9 @@ export async function handle(
     $.env(env);
   }
 
-  const result = await $`${command} ${action} ${args.join(" ")}`.quiet();
+  const result = await $`${command} ${options.join(" ")} ${action} ${args.join(
+    " ",
+  )}`.quiet();
 
   return result;
 }
